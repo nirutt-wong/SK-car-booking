@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ระบบจองรถโรงเรียนสระแก้ว</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600&family=Prompt:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f8fbff; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#dbeafe;
+    --accent:#1d4ed8; --booked:#eff6ff; --booked-ink:#1e40af; --weekend:#f8fbff; --today:#e0f2fe;
+    --blue:#2563eb; --navy:#1e3a8a;
+    --danger:#b91c1c; --ok:#15803d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg) linear-gradient(180deg,#dbeafe 0,#f8fbff 380px) no-repeat;color:var(--ink);font-family:'Noto Sans Thai',system-ui,sans-serif;font-size:15px;line-height:1.6}
+  .wrap{max-width:1100px;margin:0 auto;padding:40px 16px 64px}
+  header{margin-bottom:28px}
+  h1{font-family:'Prompt','Noto Sans Thai',sans-serif;font-size:28px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em;color:#fff}
+  header p{margin:0;color:#e0f2fe;font-weight:400}
+  h2{font-family:'Prompt','Noto Sans Thai',sans-serif;font-size:17px;font-weight:600;margin:0 0 16px;color:var(--navy)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;box-shadow:0 4px 18px rgba(37,99,235,.07)}
+  form{display:grid;grid-template-columns:repeat(2,1fr);gap:16px 20px}
+  .full{grid-column:1/-1}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+  input,select,textarea{width:100%;font:inherit;color:inherit;background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 12px;outline:none;transition:border-color .15s}
+  input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+  textarea{resize:vertical;min-height:72px}
+  button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid #bfdbfe;padding:10px 20px;transition:opacity .15s,background .15s}
+  .primary{background:linear-gradient(135deg,#1d4ed8,#38bdf8);border-color:transparent;color:#fff;font-weight:500}
+  .primary:hover{opacity:.9}
+  .primary:disabled{opacity:.5;cursor:wait}
+  .ghost{background:#fff;color:#1d4ed8}
+  .ghost:hover{background:#eff6ff;border-color:#93c5fd}
+  .actions{display:flex;align-items:center;gap:12px}
+  .mode{font-size:12px;color:var(--muted)}
+  .mode b{color:var(--danger);font-weight:500}
+  section.list{margin-top:32px}
+  .head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+  .head span{font-size:13px;color:var(--muted)}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+  table{border-collapse:collapse;width:100%;min-width:760px}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:left;vertical-align:top;font-size:13px}
+  th:last-child,td:last-child{border-right:0}
+  tr:last-child td{border-bottom:0}
+  thead th{background:#eff6ff;color:var(--navy);font-weight:500;position:sticky;top:0}
+  thead th.date{background:#eff6ff}
+  thead th small{display:block;color:var(--muted);font-weight:300}
+  th.date,td.date{white-space:nowrap;background:#fff;position:sticky;left:0;font-weight:500;min-width:130px}
+  tr.weekend td{background:var(--weekend)} tr.weekend td.date{background:var(--weekend)}
+  tr.today td.date{background:var(--today)}
+  td.free{color:#a8a29e;cursor:pointer;font-weight:300}
+  td.free:hover{background:#eff6ff;color:var(--blue)}
+  td.booked .chip{background:var(--booked);color:var(--booked-ink);border-radius:8px;padding:6px 8px;line-height:1.4}
+  .chip b{font-weight:500;display:block}
+  .chip span{display:block;font-size:12px;opacity:.8}
+  .toggle{margin-top:16px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+  dialog.wide{width:min(960px,95vw);max-height:90vh}
+  .rfilter{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px}
+  .rfilter div{min-width:150px}
+  .rscroll{overflow:auto;max-height:55vh;border:1px solid var(--line);border-radius:10px}
+  .rtable{min-width:0}
+  .rtable th{position:static}
+  .rsum{font-size:13px;color:var(--muted);margin:0 0 8px}
+  #printArea{display:none}
+  #printArea h1{font-size:20px;margin:0 0 4px}
+  @media print{
+    @page{size:A4 landscape;margin:12mm}
+    body.printing{background:#fff}
+    body.printing .wrap,body.printing dialog,body.printing .toast{display:none!important}
+    body.printing #printArea{display:block}
+    #printArea table{min-width:0;width:100%}
+    #printArea th,#printArea td{font-size:12px;padding:6px 8px;border:1px solid #999}
+    #printArea tr{page-break-inside:avoid}
+  }
+  .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s;font-size:14px;z-index:9}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .toast.err{background:var(--danger)}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+    padding:24px 28px;border-radius:18px;background:linear-gradient(110deg,#1e40af 0%,#2563eb 40%,#7dd3fc 78%,#f0f9ff 100%);
+    box-shadow:0 8px 28px rgba(37,99,235,.22)}
+  .auth{display:flex;align-items:center;gap:10px;font-size:13px;color:#0c4a6e;font-weight:500}
+  .sm{padding:6px 14px;font-size:13px}
+  dialog{border:1px solid var(--line);border-radius:14px;padding:24px;width:min(360px,92vw);font:inherit;color:var(--ink)}
+  dialog::backdrop{background:rgba(28,25,23,.35)}
+  dialog form{grid-template-columns:1fr}
+  #approval{margin-top:32px}
+  .pitem{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 0;border-top:1px solid var(--line)}
+  .pitem:first-of-type{border-top:0}
+  .pitem .info{flex:1;min-width:240px;font-size:14px}
+  .pitem .info small{display:block;color:var(--muted)}
+  .pitem .btns{display:flex;gap:8px}
+  .ok{background:var(--ok);border-color:var(--ok);color:#fff}
+  .no{background:#fff;border-color:var(--danger);color:var(--danger)}
+  .empty{color:var(--muted);font-size:14px}
+  td.booked .chip.pending{background:#fef3c7;color:#92400e}
+  td.booked .chip.approved{background:#dcfce7;color:#166534}
+  .chip em{font-style:normal;font-size:11px;font-weight:500;display:block;margin-bottom:2px}
+  .chip .del{display:block;margin-top:6px;padding:2px 10px;font-size:11px;border-radius:6px;background:#fff;border:1px solid var(--danger);color:var(--danger)}
+  .chip .del:hover{background:var(--danger);color:#fff}
+  .legend{font-size:12px;color:var(--muted);margin-top:10px;text-align:center}
+  @media(max-width:640px){form{grid-template-columns:1fr}.card{padding:18px}.wrap{padding-top:24px}
+    header{padding:18px}h1{font-size:22px}.auth{color:#fff}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>ระบบจองรถโรงเรียนสระแก้ว</h1>
+      <p>กรอกข้อมูลเพื่อจองรถ และตรวจสอบตารางการใช้รถ</p>
+    </div>
+    <div class="auth"><span id="who"></span><button class="ghost sm" id="authBtn" type="button">เข้าสู่ระบบผู้อนุมัติ</button></div>
+  </header>
+
+  <div class="card">
+    <h2>จองรถ</h2>
+    <form id="form" autocomplete="off">
+      <div>
+        <label for="name">ชื่อผู้จอง</label>
+        <input id="name" required maxlength="80" placeholder="พิมพ์ชื่อ-นามสกุล">
+      </div>
+      <div>
+        <label for="dept">สังกัด</label>
+        <select id="dept" required>
+          <option value="" disabled selected>เลือกสังกัด</option>
+          <option>ฝ่ายบริหาร</option>
+          <option>กลุ่มสาระคณิตศาสตร์</option>
+          <option>กลุ่มสาระวิทยาศาสตร์และเทคโนโลยี</option>
+          <option>กลุ่มสาระภาษาไทย</option>
+          <option>กลุ่มสาระสังคมศึกษา ศาสนา วัฒนธรรม</option>
+          <option>กลุ่มสาระภาษาต่างประเทศ</option>
+          <option>กลุ่มสาระสุขศึกษาและพลศึกษา</option>
+          <option>กลุ่มสาระการงานอาชีพ</option>
+          <option>กลุ่มสาระศิลปะ</option>
+        </select>
+      </div>
+      <div>
+        <label for="date">วันที่ใช้รถ</label>
+        <input id="date" type="date" required>
+      </div>
+      <div>
+        <label for="bus">ทะเบียนรถ</label>
+        <select id="bus" required></select>
+      </div>
+      <div>
+        <label for="passengers">จำนวนผู้โดยสาร (คน)</label>
+        <input id="passengers" type="number" min="1" max="100" required placeholder="เช่น 30">
+      </div>
+      <div>
+        <label for="province">จังหวัดที่เดินทางไป</label>
+        <input id="province" required maxlength="60" placeholder="เช่น ระยอง">
+      </div>
+      <div class="full">
+        <label for="reason">เหตุผลในการจอง</label>
+        <textarea id="reason" required maxlength="300" placeholder="เช่น พาผู้เรียนไปทัศนศึกษา"></textarea>
+      </div>
+      <div class="full actions">
+        <button class="primary" id="submit" type="submit">ยืนยันการจอง</button>
+        <span class="mode" id="mode"></span>
+      </div>
+    </form>
+  </div>
+
+  <section class="card" id="approval" hidden>
+    <h2>รายการรออนุมัติ <span id="pcount" style="color:var(--muted);font-weight:300"></span></h2>
+    <div id="plist"></div>
+  </section>
+
+  <section class="list">
+    <div class="head">
+      <h2 id="title" style="margin:0">ตารางการจอง 15 วัน</h2>
+      <span id="range"></span>
+    </div>
+    <div class="scroll"><table id="table"></table></div>
+    <div class="legend">🟨 รออนุมัติ &nbsp; 🟩 อนุมัติแล้ว</div>
+    <div class="toggle"><button class="ghost" id="toggle">แสดงการจองทั้งหมด</button><button class="ghost" id="reportBtn" type="button" hidden>รายงานการจองรถโรงเรียน</button></div>
+  </section>
+</div>
+<dialog id="dlg">
+  <h2>เข้าสู่ระบบผู้อนุมัติ</h2>
+  <form id="loginForm">
+    <div><label for="em">อีเมล</label><input id="em" type="email" required></div>
+    <div><label for="pw">รหัสผ่าน</label><input id="pw" type="password" required></div>
+    <div id="loginErr" class="mode" style="color:var(--danger)"></div>
+    <div class="actions"><button class="primary" type="submit">เข้าสู่ระบบ</button><button class="ghost" type="button" id="cancel">ยกเลิก</button></div>
+  </form>
+</dialog>
+<dialog id="rdlg" class="wide">
+  <h2>รายงานการจองรถโรงเรียน (ย้อนหลัง)</h2>
+  <div class="rfilter">
+    <div><label for="rfrom">ตั้งแต่วันที่</label><input id="rfrom" type="date"></div>
+    <div><label for="rto">ถึงวันที่</label><input id="rto" type="date"></div>
+    <button class="ghost" type="button" id="rload">แสดงรายงาน</button>
+  </div>
+  <div id="rsum" class="rsum"></div>
+  <div class="rscroll" id="rbody"></div>
+  <div class="actions" style="margin-top:16px;justify-content:flex-end">
+    <button class="primary" type="button" id="rpdf">บันทึกเป็น PDF</button>
+    <button class="ghost" type="button" id="rclose">ปิด</button>
+  </div>
+</dialog>
+<div id="printArea"></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+/* ============ ตั้งค่า Firebase ============
+   ไปที่ Firebase Console > Project settings > Your apps > Web app
+   แล้วนำค่า config มาวางแทนด้านล่าง (ใช้ Firestore Database)
+   ถ้ายังไม่ได้ตั้งค่า ระบบจะทำงานในโหมดทดสอบ (เก็บในเครื่องนี้เท่านั้น) */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA65SgR1hWkK0bXMxKIvWq8llTFUwUWQos",
+  authDomain: "car-school-booking.firebaseapp.com",
+  projectId: "car-school-booking",
+  storageBucket: "car-school-booking.firebasestorage.app",
+  messagingSenderId: "273268697910",
+  appId: "1:273268697910:web:a4dc25c7697ada423de197",
+  measurementId: "G-CDC3T454PV"
+};
+const COLLECTION = "bus_bookings";
+/* ========================================= */
+
+const BUSES = [
+  "นข 4482 สระแก้ว",
+  "นข 3595 สระแก้ว",
+  "นข 1654 สระแก้ว",
+  "นข 1367 สระแก้ว",
+  "บง 9652 สระแก้ว"
+];
+const SHORT_DAYS = 15;
+const $ = id => document.getElementById(id);
+
+/* ---------- วันที่ ---------- */
+const pad = n => String(n).padStart(2, "0");
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const CUTOFF_HOUR = 20;   // หลัง 20:00 ของวันนั้น รายการจองของวันนั้นจะไม่แสดง
+let today, maxDate;
+function updateStart(){
+  const now = new Date(), t = new Date(now); t.setHours(0,0,0,0);
+  const start = now.getHours() >= CUTOFF_HOUR ? new Date(t.getFullYear(), t.getMonth(), t.getDate()+1) : t;
+  if (today && +today === +start) return false;
+  today = start; maxDate = addMonths(t,2);
+  $("date").min = iso(today); $("date").max = iso(maxDate);
+  return true;
+}
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const addMonths = (d,n) => { const x = new Date(d); x.setMonth(x.getMonth()+n); return x; };
+const fmt = d => d.toLocaleDateString("th-TH",{weekday:"short",day:"numeric",month:"short",year:"2-digit"});
+const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y,m-1,d); };
+
+/* ---------- ข้อมูล / Storage ---------- */
+let bookings = {};          // key: `${date}_${busIndex}`
+let showAll = false;
+const key = (date, bus) => `${date}_${BUSES.indexOf(bus)}`;
+
+const demo = FIREBASE_CONFIG.apiKey.startsWith("YOUR_");
+let store;
+
+if (demo) {
+  $("mode").innerHTML = "<b>โหมดทดสอบ</b> – ยังไม่ได้เชื่อมต่อ Firebase (ผู้อนุมัติทดสอบ: รหัสผ่าน 1234)";
+  const LS = "bus_bookings_demo";
+  const load = () => { try { return JSON.parse(localStorage.getItem(LS) || "{}"); } catch { return {}; } };
+  let cb = () => {}, authCb = () => {};
+  const save = all => { try { localStorage.setItem(LS, JSON.stringify(all)); } catch {} cb(all); };
+  store = {
+    onAuth(fn){ authCb = fn; fn(sessionStorage.getItem("demo_user")); },
+    async login(email, pw){
+      if (pw !== "1234") throw new Error("BAD");
+      try { sessionStorage.setItem("demo_user", email); } catch {}
+      authCb(email);
+    },
+    async logout(){ try { sessionStorage.removeItem("demo_user"); } catch {} authCb(null); },
+    async setStatus(id, status, by){
+      const all = load(); if (all[id]) { all[id].status = status; all[id].approvedBy = by; save(all); }
+    },
+    async remove(id){ const all = load(); delete all[id]; save(all); },
+    subscribe(from, to, fn){ cb = fn; fn(load()); },
+    async fetchRange(from, to){
+      const out = {}, all = load();
+      for (const id in all) if (all[id].date >= from && all[id].date <= to) out[id] = all[id];
+      return out;
+    },
+    async book(id, data){
+      const all = load();
+      if (all[id]) throw new Error("TAKEN");
+      all[id] = data;
+      save(all);
+    }
+  };
+} else {
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+  const fs = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  const au = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+  const app = initializeApp(FIREBASE_CONFIG);
+  const db = fs.getFirestore(app), auth = au.getAuth(app);
+  store = {
+    onAuth(fn){ au.onAuthStateChanged(auth, u => fn(u ? u.email : null)); },
+    login: (email, pw) => au.signInWithEmailAndPassword(auth, email, pw),
+    logout: () => au.signOut(auth),
+    setStatus: (id, status, by) => fs.updateDoc(fs.doc(db, COLLECTION, id),
+      { status, approvedBy: by, approvedAt: fs.serverTimestamp() }),
+    remove: id => fs.deleteDoc(fs.doc(db, COLLECTION, id)),
+    async fetchRange(from, to){
+      const snap = await fs.getDocs(fs.query(fs.collection(db, COLLECTION),
+        fs.where("date", ">=", from), fs.where("date", "<=", to)));
+      const out = {}; snap.forEach(d => out[d.id] = d.data()); return out;
+    },
+    subscribe(from, to, fn){
+      const q = fs.query(fs.collection(db, COLLECTION),
+        fs.where("date", ">=", from), fs.where("date", "<=", to));
+      fs.onSnapshot(q, snap => {
+        const out = {}; snap.forEach(d => out[d.id] = d.data()); fn(out);
+      }, err => { console.error(err); toast("โหลดข้อมูลไม่สำเร็จ", true); });
+    },
+    async book(id, data){
+      const ref = fs.doc(db, COLLECTION, id);
+      await fs.runTransaction(db, async tx => {
+        if ((await tx.get(ref)).exists()) throw new Error("TAKEN");
+        tx.set(ref, { ...data, createdAt: fs.serverTimestamp() });
+      });
+    }
+  };
+}
+
+/* ---------- UI ---------- */
+function toast(msg, err=false){
+  const t = $("toast"); t.textContent = msg; t.className = "toast show" + (err ? " err" : "");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.className = "toast", 3000);
+}
+
+BUSES.forEach(b => $("bus").add(new Option(b, b)));
+$("bus").selectedIndex = -1;
+updateStart();
+
+let render = function(){
+  const days = showAll
+    ? Math.round((maxDate - today) / 864e5) + 1
+    : SHORT_DAYS;
+  const end = addDays(today, days - 1);
+  $("title").textContent = showAll ? "รายการจองล่วงหน้า 2 เดือน (เฉพาะวันที่มีการจอง)" : "ตารางการจอง 15 วัน";
+  $("range").textContent = `${fmt(today)} – ${fmt(end)}`;
+  $("toggle").textContent = showAll ? "แสดงการจอง 15 วัน" : "แสดงการจองทั้งหมด";
+
+  const table = $("table"); table.textContent = "";
+  const thead = table.createTHead().insertRow();
+  const h0 = document.createElement("th"); h0.className = "date"; h0.textContent = "วันที่"; thead.append(h0);
+  BUSES.forEach(b => {
+    const th = document.createElement("th");
+    const [plate, ...prov] = b.split(" ").reduce((a,w,i)=> i<2 ? (a[0]=(a[0]?a[0]+" ":"")+w,a) : (a.push(w),a), [""]);
+    th.textContent = plate;
+    const s = document.createElement("small"); s.textContent = prov.join(" "); th.append(s);
+    thead.append(th);
+  });
+
+  const body = table.createTBody();
+  let shown = 0;
+  for (let i = 0; i < days; i++){
+    const d = addDays(today, i), ds = iso(d);
+    if (showAll && !BUSES.some(bus => bookings[key(ds, bus)])) continue;
+    shown++;
+    const tr = body.insertRow();
+    if (d.getDay()===0 || d.getDay()===6) tr.classList.add("weekend");
+    if (ds === iso(new Date())) tr.classList.add("today");
+    const c0 = tr.insertCell(); c0.className = "date"; c0.textContent = fmt(d);
+    BUSES.forEach(bus => {
+      const td = tr.insertCell(), b = bookings[key(ds, bus)];
+      if (b){
+        td.className = "booked";
+        const st = b.status === "approved" ? "approved" : "pending";
+        const chip = document.createElement("div"); chip.className = "chip " + st;
+        const tag = document.createElement("em"); tag.textContent = st === "approved" ? "อนุมัติแล้ว" : "รออนุมัติ";
+        const n = document.createElement("b"); n.textContent = b.name;
+        const l1 = document.createElement("span"); l1.textContent = b.dept.replace("กลุ่มสาระ","");
+        const l2 = document.createElement("span"); l2.textContent = `${b.province} · ${b.passengers} คน`;
+        chip.append(tag,n,l1,l2); chip.title = b.reason;
+        if (user){
+          const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "ลบการจอง";
+          del.onclick = async ev => {
+            ev.stopPropagation();
+            if (!confirm(`ลบการจองของ ${b.name} (${fmt(parse(b.date))} · ${b.bus}) ?\nรถจะกลับมาว่างและไม่สามารถกู้คืนได้`)) return;
+            try { await store.remove(key(ds, bus)); toast("ลบการจองแล้ว"); }
+            catch(e){ console.error(e); toast("ลบไม่สำเร็จ", true); }
+          };
+          chip.append(del);
+        }
+        td.append(chip);
+      } else {
+        td.className = "free"; td.textContent = "ว่าง";
+        td.onclick = () => {
+          $("date").value = ds; $("bus").value = bus;
+          $("form").scrollIntoView({behavior:"smooth"}); $("name").focus({preventScroll:true});
+        };
+      }
+    });
+  }
+  if (showAll && !shown){
+    const td = body.insertRow().insertCell(); td.colSpan = BUSES.length + 1;
+    td.className = "empty"; td.style.textAlign = "center"; td.textContent = "ไม่มีการจองใน 2 เดือนข้างหน้า";
+  }
+};
+
+$("toggle").onclick = () => { showAll = !showAll; render(); };
+
+$("form").onsubmit = async e => {
+  e.preventDefault();
+  const date = $("date").value, bus = $("bus").value;
+  if (!date || parse(date) < today || parse(date) > maxDate) return toast("กรุณาเลือกวันที่ภายใน 2 เดือนข้างหน้า", true);
+  const data = {
+    name: $("name").value.trim(), dept: $("dept").value, date, bus,
+    reason: $("reason").value.trim(),
+    passengers: Number($("passengers").value),
+    province: $("province").value.trim(),
+    status: "pending"
+  };
+  const btn = $("submit"); btn.disabled = true;
+  try {
+    await store.book(key(date, bus), data);
+    toast("ส่งคำขอจองแล้ว รอผู้อนุมัติยืนยัน");
+    $("form").reset(); $("bus").selectedIndex = -1;
+  } catch (err) {
+    toast(err.message === "TAKEN" ? "รถคันนี้ถูกจองในวันดังกล่าวแล้ว" : "บันทึกไม่สำเร็จ กรุณาลองใหม่", true);
+    if (err.message !== "TAKEN") console.error(err);
+  } finally { btn.disabled = false; }
+};
+
+let user = null;
+let reportRows = [], reportRange = null;
+function renderApproval(){
+  $("approval").hidden = !user;
+  if (!user) return;
+  const list = Object.entries(bookings).filter(([,b]) => b.status !== "approved")
+    .sort((a,b) => a[1].date.localeCompare(b[1].date));
+  $("pcount").textContent = `(${list.length})`;
+  const box = $("plist"); box.textContent = "";
+  if (!list.length){ const e = document.createElement("div"); e.className = "empty"; e.textContent = "ไม่มีรายการรออนุมัติ"; box.append(e); return; }
+  list.forEach(([id,b]) => {
+    const row = document.createElement("div"); row.className = "pitem";
+    const info = document.createElement("div"); info.className = "info";
+    info.textContent = `${fmt(parse(b.date))} · ${b.bus} · ${b.name} (${b.dept})`;
+    const sm = document.createElement("small"); sm.textContent = `ไป ${b.province} · ${b.passengers} คน · ${b.reason}`; info.append(sm);
+    const btns = document.createElement("div"); btns.className = "btns";
+    const ok = document.createElement("button"); ok.className = "ok sm"; ok.textContent = "อนุมัติ";
+    const no = document.createElement("button"); no.className = "no sm"; no.textContent = "ไม่อนุมัติ";
+    ok.onclick = async () => { try { await store.setStatus(id,"approved",user); toast("อนุมัติแล้ว"); } catch(e){ console.error(e); toast("ดำเนินการไม่สำเร็จ", true); } };
+    no.onclick = async () => {
+      if (!confirm("ไม่อนุมัติและยกเลิกคำขอนี้? (รถจะกลับมาว่าง)")) return;
+      try { await store.remove(id); toast("ยกเลิกคำขอแล้ว"); } catch(e){ console.error(e); toast("ดำเนินการไม่สำเร็จ", true); }
+    };
+    btns.append(ok,no); row.append(info,btns); box.append(row);
+  });
+}
+const _render = render;
+render = function(){ _render(); renderApproval(); };
+
+store.onAuth(email => {
+  user = email;
+  $("who").textContent = email ? `ผู้อนุมัติ: ${email}` : "";
+  $("authBtn").textContent = email ? "ออกจากระบบ" : "เข้าสู่ระบบผู้อนุมัติ";
+  $("reportBtn").hidden = !email;
+  if (!email){ $("rdlg").close(); reportRows = []; reportRange = null; $("rbody").textContent = ""; $("printArea").textContent = ""; }
+  render();
+});
+$("authBtn").onclick = () => user ? store.logout() : ($("loginErr").textContent = "", $("dlg").showModal());
+$("cancel").onclick = () => $("dlg").close();
+$("loginForm").onsubmit = async e => {
+  e.preventDefault();
+  try { await store.login($("em").value.trim(), $("pw").value); $("dlg").close(); $("loginForm").reset(); }
+  catch { $("loginErr").textContent = "อีเมลหรือรหัสผ่านไม่ถูกต้อง"; }
+};
+
+/* ---------- รายงานย้อนหลัง ---------- */
+const fmtLong = s => parse(s).toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
+function buildReportTable(rows, cls){
+  const t = document.createElement("table"); t.className = cls || "";
+  const hr = t.createTHead().insertRow();
+  ["ที่","วันที่","ทะเบียนรถ","ผู้จอง","สังกัด","จังหวัด","ผู้โดยสาร","เหตุผล","สถานะ"].forEach(h => {
+    const th = document.createElement("th"); th.textContent = h; hr.append(th);
+  });
+  const tb = t.createTBody();
+  rows.forEach((b,i) => {
+    const tr = tb.insertRow();
+    [i+1, fmtLong(b.date), b.bus, b.name, b.dept, b.province, b.passengers, b.reason,
+     b.status === "approved" ? "อนุมัติแล้ว" : "รออนุมัติ"].forEach(v => tr.insertCell().textContent = v);
+  });
+  return t;
+}
+function drawReport(){
+  const box = $("rbody"); box.textContent = "";
+  const total = reportRows.reduce((s,b) => s + (Number(b.passengers)||0), 0);
+  $("rsum").textContent = reportRows.length
+    ? `ทั้งหมด ${reportRows.length} รายการ · ผู้โดยสารรวม ${total} คน` : "";
+  if (!reportRows.length){ const e = document.createElement("div"); e.className = "empty"; e.style.padding = "24px"; e.style.textAlign = "center"; e.textContent = "ไม่มีรายการจองในช่วงวันที่เลือก"; box.append(e); return; }
+  box.append(buildReportTable(reportRows, "rtable"));
+}
+async function loadReport(){
+  const from = $("rfrom").value, to = $("rto").value;
+  if (!from || !to || from > to) return toast("ช่วงวันที่ไม่ถูกต้อง", true);
+  $("rbody").textContent = "กำลังโหลด..."; $("rsum").textContent = "";
+  try {
+    const data = await store.fetchRange(from, to);
+    reportRows = Object.values(data).sort((a,b) => a.date.localeCompare(b.date) || BUSES.indexOf(a.bus) - BUSES.indexOf(b.bus));
+    reportRange = [from, to];
+    drawReport();
+  } catch(e){ console.error(e); $("rbody").textContent = ""; toast("โหลดรายงานไม่สำเร็จ", true); }
+}
+$("reportBtn").onclick = () => {
+  const now = iso(new Date());
+  $("rto").max = now; $("rfrom").max = now;
+  $("rto").value = now; $("rfrom").value = iso(addMonths(parse(now),-3));
+  $("rdlg").showModal(); loadReport();
+};
+$("rload").onclick = loadReport;
+$("rclose").onclick = () => $("rdlg").close();
+$("rpdf").onclick = () => {
+  if (!reportRange) return;
+  const pa = $("printArea"); pa.textContent = "";
+  const h = document.createElement("h1"); h.textContent = "รายงานการจองรถโรงเรียนสระแก้ว";
+  const p = document.createElement("p");
+  p.textContent = `ช่วงวันที่ ${fmtLong(reportRange[0])} – ${fmtLong(reportRange[1])} · ทั้งหมด ${reportRows.length} รายการ · พิมพ์เมื่อ ${new Date().toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})}`;
+  p.style.cssText = "margin:0 0 12px;font-size:13px";
+  pa.append(h, p, buildReportTable(reportRows));
+  document.body.classList.add("printing");
+  const done = () => { document.body.classList.remove("printing"); window.removeEventListener("afterprint", done); };
+  window.addEventListener("afterprint", done);
+  setTimeout(() => window.print(), 50);
+};
+
+store.subscribe(iso(new Date()), iso(addDays(maxDate,1)), data => { bookings = {}; for (const id in data) bookings[id] = data[id]; render(); });
+render();
+setInterval(() => { if (updateStart()) render(); }, 60000);   // ตรวจทุกนาที ผ่าน 20:00 หรือข้ามวันแล้วอัปเดตเอง
+</script>
+</body>
+</html>
